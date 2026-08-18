@@ -44,7 +44,7 @@ const Subscriptions = () => {
                         <Text className="text-3xl font-bold text-dark mt-5">My Subscriptions</Text>
                         <View className=" pt-5 ">
                           <TextInput
-                            className="bg-card rounded-xl px-4 py-3 text-dark mb-4 border border-gray-300"
+                            className="bg-card rounded-xl px-4 py-3 mb-4 border border-gray-300 text-[14px] font-sans-medium text-primary"
                             placeholder="Search subscriptions, category, plan..."
                             placeholderTextColor="#666"
                             value={searchQuery}

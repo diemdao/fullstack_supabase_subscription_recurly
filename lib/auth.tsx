@@ -85,6 +85,14 @@ export const displayNameFor = (user: User | null): string | null => {
   );
 };
 
+/**
+ * The name the user actually saved, with no fallbacks. Use this to seed the
+ * settings editor — `displayNameFor()` would hand back the email prefix and
+ * the user would end up saving that as their name.
+ */
+export const fullNameFor = (user: User | null): string =>
+  (user?.user_metadata?.full_name as string | undefined) ?? '';
+
 /** Avatar URL stored on the user's metadata, when one exists. */
 export const avatarUrlFor = (user: User | null): string | null =>
   (user?.user_metadata?.avatar_url as string | undefined) ?? null;

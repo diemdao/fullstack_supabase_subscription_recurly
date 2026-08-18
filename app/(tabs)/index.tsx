@@ -72,7 +72,7 @@ export default function App() {
               </View>
 
               <View className="home-balance-card">
-                <Text className="home-balance-label">Balance</Text>
+                <Text className="home-balance-label">Monthly Total Subscriptions</Text>
                 <View className="home-balance-row">
                   <Text className="home-balance-amount">
                     {formatCurrency(balance)}

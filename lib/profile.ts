@@ -92,3 +92,15 @@ export const uploadAvatar = async (
 
   return publicUrl;
 };
+
+/**
+ * Saves the user's display name to their metadata. `useAuth()` picks up the
+ * resulting USER_UPDATED event, so the settings screen and the home header
+ * both re-render with the new name.
+ */
+export const updateDisplayName = async (name: string): Promise<void> => {
+  const { error } = await supabase.auth.updateUser({
+    data: { full_name: name.trim() },
+  });
+  if (error) throw error;
+};

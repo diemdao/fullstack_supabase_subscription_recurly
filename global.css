@@ -298,8 +298,16 @@
         @apply text-sm font-sans-semibold text-primary;
     }
 
+    /*
+     * Font size is set with an arbitrary value rather than `text-base` on
+     * purpose. Tailwind's named text sizes also emit a `line-height`, and an
+     * explicit lineHeight on a React Native TextInput clips glyph descenders —
+     * "j", "g", "y" and "p" lose their tails. `text-[14px]` compiles to the
+     * exact same fontSize with no lineHeight, so the font metrics decide the
+     * line box. Keep it this way for anything rendered into a TextInput.
+     */
     .auth-input {
-        @apply rounded-2xl border border-border bg-background px-4 py-4 text-base font-sans-medium text-primary;
+        @apply rounded-2xl border border-border bg-background px-4 py-4 text-[14px] font-sans-medium text-primary;
     }
 
     .auth-input-error {
@@ -346,6 +354,26 @@
 
     .settings-photo-button-text {
         @apply text-sm font-sans-semibold text-primary;
+    }
+
+    .settings-name-row {
+        @apply flex-row items-center gap-3;
+    }
+
+    .settings-save-button {
+        @apply items-center justify-center rounded-2xl bg-accent px-5 py-4;
+    }
+
+    .settings-save-button-disabled {
+        @apply bg-accent/40;
+    }
+
+    .settings-save-button-text {
+        @apply text-sm font-sans-bold text-primary;
+    }
+
+    .settings-saved-note {
+        @apply text-xs font-sans-medium text-success;
     }
 
     .auth-helper {
