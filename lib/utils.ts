@@ -13,6 +13,23 @@ export const formatCurrency = (value: number, currency = "USD"): string => {
   }
 };
 
+/**
+ * Whole-dollar formatting for compact surfaces like the insights chart, where
+ * cents are noise. Rounds to the nearest dollar.
+ */
+export const formatWholeCurrency = (value: number, currency = "USD"): string => {
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+  } catch {
+    return Math.round(value).toString();
+  }
+};
+
 export const formatSubscriptionDateTime = (value?: string): string => {
   if (!value) return "Not provided";
   const parsedDate = dayjs(value);

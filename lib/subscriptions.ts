@@ -61,8 +61,8 @@ export const rowToSubscription = (row: SubscriptionRow): Subscription => {
   };
 };
 
-const draftToInsert = (draft: SubscriptionDraft, userId: string) => ({
-  user_id: userId,
+/** Maps a draft onto table columns. `user_id` is never part of an update. */
+const draftToColumns = (draft: SubscriptionDraft) => ({
   name: draft.name,
   price: draft.price,
   currency: draft.currency ?? 'USD',
@@ -76,6 +76,11 @@ const draftToInsert = (draft: SubscriptionDraft, userId: string) => ({
   renewal_date: draft.renewalDate ?? null,
   icon_key: draft.iconKey ?? 'plus',
   color: draft.color ?? null,
+});
+
+const draftToInsert = (draft: SubscriptionDraft, userId: string) => ({
+  ...draftToColumns(draft),
+  user_id: userId,
 });
 
 const requireUserId = async (): Promise<string> => {
@@ -106,6 +111,22 @@ export const createSubscription = async (
   const { data, error } = await supabase
     .from('subscriptions')
     .insert(draftToInsert(draft, userId))
+    .select()
+    .single();
+
+  if (error) throw error;
+  return rowToSubscription(data as SubscriptionRow);
+};
+
+/** Overwrites every editable column on a subscription the user owns. */
+export const updateSubscription = async (
+  id: string,
+  draft: SubscriptionDraft
+): Promise<Subscription> => {
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .update(draftToColumns(draft))
+    .eq('id', id)
     .select()
     .single();
 
@@ -187,4 +208,103 @@ export const upcomingRenewals = (
       currency: subscription.currency,
       daysLeft,
     }));
+};
+/** One bar in the insights chart. A bucket is a day (week view) or a
+ * seven-day block of the month (month view). */
+export interface ChartBucket {
+  /** Stable key for list rendering. */
+  key: string;
+  /** Axis label, e.g. "Thu" or "8–14". */
+  label: string;
+  /** Combined price of everything renewing in the bucket. */
+  total: number;
+  /** How many subscriptions renew in the bucket. */
+  count: number;
+  /** The bucket containing today — highlighted on the axis. */
+  isCurrent: boolean;
+}
+
+const isBillable = (subscription: Subscription): boolean =>
+  subscription.status !== 'cancelled' && Boolean(subscription.renewalDate);
+
+/**
+ * Buckets renewals into one entry per day across the current Monday–Sunday
+ * week. Days with nothing due are kept so the chart holds a stable seven-column
+ * shape rather than collapsing.
+ */
+export const renewalsByWeekday = (subscriptions: Subscription[]): ChartBucket[] => {
+  const today = dayjs().startOf('day');
+
+  // dayjs weeks start on Sunday (day() === 0), so step back to Monday without
+  // pulling in the isoWeek plugin.
+  const monday = today.subtract((today.day() + 6) % 7, 'day');
+  const todayKey = today.format('YYYY-MM-DD');
+
+  const buckets: ChartBucket[] = Array.from({ length: 7 }, (_, offset) => {
+    const day = monday.add(offset, 'day');
+    const key = day.format('YYYY-MM-DD');
+    return {
+      key,
+      label: day.format('ddd'),
+      total: 0,
+      count: 0,
+      isCurrent: key === todayKey,
+    };
+  });
+
+  const byKey = new Map(buckets.map((bucket) => [bucket.key, bucket]));
+
+  for (const subscription of subscriptions) {
+    if (!isBillable(subscription)) continue;
+
+    const renewal = dayjs(subscription.renewalDate);
+    if (!renewal.isValid()) continue;
+
+    const bucket = byKey.get(renewal.format('YYYY-MM-DD'));
+    if (!bucket) continue;
+
+    bucket.total += subscription.price;
+    bucket.count += 1;
+  }
+
+  return buckets;
+};
+
+/**
+ * Buckets the current month into seven-day blocks starting on the 1st, giving
+ * four or five bars depending on the month's length. Bucketing by individual
+ * day would mean up to 31 bars, which is unreadable at phone width.
+ */
+export const renewalsByMonthBlock = (subscriptions: Subscription[]): ChartBucket[] => {
+  const today = dayjs().startOf('day');
+  const monthKey = today.format('YYYY-MM');
+  const daysInMonth = today.daysInMonth();
+  const todayDate = today.date();
+
+  const buckets: ChartBucket[] = [];
+  for (let startDay = 1; startDay <= daysInMonth; startDay += 7) {
+    const endDay = Math.min(startDay + 6, daysInMonth);
+    buckets.push({
+      key: `${monthKey}-${startDay}`,
+      label: startDay === endDay ? `${startDay}` : `${startDay}\u2013${endDay}`,
+      total: 0,
+      count: 0,
+      isCurrent: todayDate >= startDay && todayDate <= endDay,
+    });
+  }
+
+  for (const subscription of subscriptions) {
+    if (!isBillable(subscription)) continue;
+
+    const renewal = dayjs(subscription.renewalDate);
+    if (!renewal.isValid() || renewal.format('YYYY-MM') !== monthKey) continue;
+
+    const bucket = buckets[Math.floor((renewal.date() - 1) / 7)];
+    if (!bucket) continue;
+
+    bucket.total += subscription.price;
+    bucket.count += 1;
+  }
+
+  return buckets;
 };

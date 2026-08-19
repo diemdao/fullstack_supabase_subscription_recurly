@@ -2,6 +2,7 @@ import {
   createSubscription,
   deleteSubscription,
   fetchSubscriptions,
+  updateSubscription,
   updateSubscriptionStatus,
 } from '@/lib/subscriptions';
 import { create } from 'zustand';
@@ -19,6 +20,7 @@ interface SubscriptionStore {
 
   loadSubscriptions: (options?: { refresh?: boolean }) => Promise<void>;
   addSubscription: (draft: SubscriptionDraft) => Promise<Subscription | null>;
+  editSubscription: (id: string, draft: SubscriptionDraft) => Promise<Subscription | null>;
   cancelSubscription: (id: string) => Promise<void>;
   removeSubscription: (id: string) => Promise<void>;
   setSubscriptions: (subscriptions: Subscription[]) => void;
@@ -59,6 +61,22 @@ export const useSubscriptionStore = create<SubscriptionStore>((set, get) => ({
       const created = await createSubscription(draft);
       set((state) => ({ subscriptions: [created, ...state.subscriptions] }));
       return created;
+    } catch (error) {
+      set({ error: messageFor(error) });
+      return null;
+    }
+  },
+
+  editSubscription: async (id, draft) => {
+    set({ error: null });
+    try {
+      const updated = await updateSubscription(id, draft);
+      set((state) => ({
+        subscriptions: state.subscriptions.map((subscription) =>
+          subscription.id === id ? updated : subscription
+        ),
+      }));
+      return updated;
     } catch (error) {
       set({ error: messageFor(error) });
       return null;

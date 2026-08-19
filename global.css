@@ -491,4 +491,188 @@
     .category-chip-text-active {
         @apply text-accent;
     }
+
+    /* Icon picker — bundled brand glyphs from constants/icons.ts. */
+    .icon-picker-row {
+        @apply flex-row flex-wrap gap-2;
+    }
+
+    .icon-option {
+        @apply size-12 items-center justify-center rounded-2xl border border-border bg-background;
+    }
+
+    .icon-option-active {
+        @apply border-accent bg-accent/10;
+    }
+
+    .icon-option-glyph {
+        @apply size-6;
+    }
+
+    /* Colour picker — swatches for the card background. */
+    .color-picker-row {
+        @apply flex-row flex-wrap gap-3;
+    }
+
+    .color-swatch {
+        @apply size-9 rounded-full border-2 border-transparent;
+    }
+
+    .color-swatch-active {
+        @apply border-primary;
+    }
+
+    /* Date fields render as a pressable that opens the native picker. */
+    .date-row {
+        @apply flex-row gap-3;
+    }
+
+    .date-field {
+        @apply flex-1 rounded-2xl border border-border bg-background px-4 py-3;
+    }
+
+    .date-field-active {
+        @apply border-accent bg-accent/10;
+    }
+
+    .date-field-head {
+        @apply flex-row items-center justify-between;
+    }
+
+    .date-field-label {
+        @apply text-xs font-sans-semibold text-muted-foreground;
+    }
+
+    .date-field-text {
+        @apply mt-1 text-[14px] font-sans-bold text-primary;
+    }
+
+    /* Container that makes the inline iOS picker read as a distinct surface. */
+    .date-picker-card {
+        @apply mt-3 rounded-2xl border border-accent/30 bg-card p-3;
+    }
+
+    .date-picker-head {
+        @apply mb-1 flex-row items-center justify-between;
+    }
+
+    .date-picker-title {
+        @apply text-sm font-sans-bold text-primary;
+    }
+
+    .date-picker-done {
+        @apply rounded-xl bg-accent px-4 py-2;
+    }
+
+    .date-picker-done-text {
+        @apply text-sm font-sans-bold text-primary;
+    }
+
+    /* Edit / delete actions revealed inside an expanded subscription card. */
+    .sub-actions {
+        @apply mt-4 flex-row gap-3 border-t border-black/10 pt-4;
+    }
+
+    .sub-action {
+        @apply flex-1 flex-row items-center justify-center gap-2 rounded-2xl border border-black/15 py-3;
+    }
+
+    .sub-action-text {
+        @apply text-sm font-sans-semibold text-primary;
+    }
+
+    .sub-action-danger {
+        @apply border-destructive/40 bg-destructive/10;
+    }
+
+    .sub-action-danger-text {
+        @apply text-sm font-sans-semibold text-destructive;
+    }
+
+    /* Upcoming renewals bar chart (insights screen). */
+    .chart-card {
+        @apply rounded-3xl border border-border bg-card p-5;
+    }
+
+    .chart-total-label {
+        @apply text-sm font-sans-semibold text-muted-foreground;
+    }
+
+    .chart-total-value {
+        @apply mt-1 text-3xl font-sans-extrabold text-primary;
+    }
+
+    /* Plot area: gridlines render first so the bars sit on top of them. */
+    .chart-plot {
+        @apply relative mt-6;
+    }
+
+    .chart-row {
+        @apply h-full flex-row items-end;
+    }
+
+    .chart-grid-row {
+        @apply absolute left-0 right-0 flex-row items-center;
+    }
+
+    .chart-grid-label {
+        @apply w-10 pr-2 text-right text-[10px] font-sans-medium text-muted-foreground;
+    }
+
+    /* Height matches the 1px SVG canvas the dashed rule is drawn on. */
+    .chart-grid-line {
+        @apply h-px flex-1;
+    }
+
+    .chart-column {
+        @apply flex-1 items-center justify-end;
+    }
+
+    .chart-bar {
+        @apply w-6 rounded-full bg-subscription;
+    }
+
+    .chart-bar-active {
+        @apply bg-accent;
+    }
+
+    .chart-bar-empty {
+        @apply bg-black/10;
+    }
+
+    .chart-day {
+        @apply mt-2 text-xs font-sans-semibold text-muted-foreground;
+    }
+
+    .chart-day-active {
+        @apply text-primary;
+    }
+
+    .chart-day-today {
+        @apply font-sans-bold text-primary text-shadow-xs;
+    }
+
+    .chart-tooltip-anchor {
+        @apply absolute left-0 right-0 items-center;
+    }
+
+    .chart-tooltip {
+        @apply rounded-xl bg-primary px-3 py-1.5;
+    }
+
+    .chart-tooltip-text {
+        @apply text-xs font-sans-bold text-background;
+    }
+
+    .chart-tooltip-arrow {
+        @apply -mt-1 size-2 rotate-45 rounded-[1px] bg-primary;
+    }
+
+    .chart-caption {
+        @apply mt-4 text-xs font-sans-medium text-muted-foreground;
+    }
+
+    .insights-title {
+        @apply text-3xl font-sans-bold text-primary;
+    }
 }

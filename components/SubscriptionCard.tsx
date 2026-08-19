@@ -1,10 +1,13 @@
+import { colors } from '@/constants/theme'
 import { formatCurrency, formatStatusLabel, formatSubscriptionDateTime } from '@/lib/utils'
+import Ionicons from '@expo/vector-icons/Ionicons'
 import clsx from 'clsx'
 import React from 'react'
-import { Image, Pressable, Text, View } from 'react-native'
+import { ActivityIndicator, Image, Pressable, Text, View } from 'react-native'
 
 const SubscriptionCard = ({name, price, currency, icon, billing, color, category, 
-    plan, renewalDate, expanded, onPress, paymentMethod, startDate, status}: SubscriptionCardProps) => {
+    plan, renewalDate, expanded, onPress, paymentMethod, startDate, status,
+    onEditPress, onDeletePress, isDeleting}: SubscriptionCardProps) => {
 
 const fallback = "Not provided";
 
@@ -82,6 +85,42 @@ const fallback = "Not provided";
                             </View>
                         </View>
                     </View>
+
+                    {(onEditPress || onDeletePress) && (
+                        <View className="sub-actions">
+                            {onEditPress && (
+                                <Pressable
+                                    className="sub-action"
+                                    onPress={onEditPress}
+                                    disabled={isDeleting}
+                                    accessibilityRole="button"
+                                    accessibilityLabel={`Edit ${name}`}
+                                >
+                                    <Ionicons name="create-outline" size={16} color={colors.primary} />
+                                    <Text className="sub-action-text">Edit</Text>
+                                </Pressable>
+                            )}
+
+                            {onDeletePress && (
+                                <Pressable
+                                    className="sub-action sub-action-danger"
+                                    onPress={onDeletePress}
+                                    disabled={isDeleting}
+                                    accessibilityRole="button"
+                                    accessibilityLabel={`Delete ${name}`}
+                                >
+                                    {isDeleting ? (
+                                        <ActivityIndicator color={colors.destructive} />
+                                    ) : (
+                                        <>
+                                            <Ionicons name="trash-outline" size={16} color={colors.destructive} />
+                                            <Text className="sub-action-danger-text">Delete</Text>
+                                        </>
+                                    )}
+                                </Pressable>
+                            )}
+                        </View>
+                    )}
                 </View>
             )}
 

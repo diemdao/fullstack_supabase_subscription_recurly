@@ -8,6 +8,7 @@ import images from "@/constants/images";
 import "@/global.css";
 import { avatarUrlFor, displayNameFor, useAuth } from "@/lib/auth";
 import { useSubscriptionStore } from "@/lib/subscriptionStore";
+import { useSubscriptionActions } from "@/lib/useSubscriptionActions";
 import { monthlySpend, nextRenewalDate, upcomingRenewals } from "@/lib/subscriptions";
 import { formatCurrency } from "@/lib/utils";
 import dayjs from "dayjs";
@@ -32,6 +33,7 @@ export default function App() {
   const error = useSubscriptionStore((state) => state.error);
   const loadSubscriptions = useSubscriptionStore((state) => state.loadSubscriptions);
   const addSubscription = useSubscriptionStore((state) => state.addSubscription);
+  const actions = useSubscriptionActions();
 
   // Pull the user's rows once per signed-in session; `AuthSync` clears the
   // cache on sign-out so the next user re-fetches instead of seeing stale data.
@@ -110,9 +112,12 @@ export default function App() {
               {...item}
               expanded={expandedSubscriptionId === item.id}
               onPress={() => setExpandedSubscriptionId((currentId) => (currentId) === item.id ? null : item.id)}
+              onEditPress={() => actions.startEdit(item)}
+              onDeletePress={() => actions.confirmDelete(item)}
+              isDeleting={actions.deletingId === item.id}
             />
           )}
-          extraData ={expandedSubscriptionId}
+          extraData={`${expandedSubscriptionId}:${actions.deletingId}`}
           ItemSeparatorComponent={() => <View className="h-4"/>}
           showsVerticalScrollIndicator={false}
           refreshing={isRefreshing}
@@ -129,9 +134,13 @@ export default function App() {
         />
 
         <CreateSubscriptionModal
-          visible={isModalVisible}
-          onClose={() => setIsModalVisible(false)}
-          onSubmit={addSubscription}
+          visible={isModalVisible || actions.editing !== null}
+          subscription={actions.editing}
+          onClose={() => {
+            setIsModalVisible(false);
+            actions.stopEdit();
+          }}
+          onSubmit={actions.editing ? actions.submitEdit : addSubscription}
         />
 
 

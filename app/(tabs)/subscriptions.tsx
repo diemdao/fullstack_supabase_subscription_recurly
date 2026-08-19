@@ -1,6 +1,8 @@
+import CreateSubscriptionModal from "@/components/CreateSubscriptionModal";
 import SubscriptionCard from "@/components/SubscriptionCard";
 import { useAuth } from "@/lib/auth";
 import { useSubscriptionStore } from "@/lib/subscriptionStore";
+import { useSubscriptionActions } from "@/lib/useSubscriptionActions";
 import { styled } from "nativewind";
 import { usePostHog } from "posthog-react-native";
 import { useEffect, useState } from "react";
@@ -19,6 +21,7 @@ const Subscriptions = () => {
     const hasLoaded = useSubscriptionStore((state) => state.hasLoaded);
     const error = useSubscriptionStore((state) => state.error);
     const loadSubscriptions = useSubscriptionStore((state) => state.loadSubscriptions);
+    const actions = useSubscriptionActions();
     const posthog = usePostHog();
 
     // Covers landing here directly (deep link) before the home tab has loaded.
@@ -78,8 +81,12 @@ const Subscriptions = () => {
                                 });
                             }
                         }}
+                        onEditPress={() => actions.startEdit(item)}
+                        onDeletePress={() => actions.confirmDelete(item)}
+                        isDeleting={actions.deletingId === item.id}
                     />
                 )}
+                extraData={`${expandedId}:${actions.deletingId}`}
                 refreshing={isRefreshing}
                 onRefresh={() => loadSubscriptions({ refresh: true })}
                 ListEmptyComponent={
@@ -91,12 +98,19 @@ const Subscriptions = () => {
                         </Text>
                     )
                 }
-                contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20, gap: 12 }}
+                contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120, gap: 12 }}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
                 keyboardDismissMode="on-drag"
 
                 // on-drag when we click out or drag the screen again outside the key board, the key board will stop
+            />
+
+            <CreateSubscriptionModal
+                visible={actions.editing !== null}
+                subscription={actions.editing}
+                onClose={actions.stopEdit}
+                onSubmit={actions.submitEdit}
             />
         </SafeAreaView>
     )
