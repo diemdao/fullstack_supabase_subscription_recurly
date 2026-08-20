@@ -64,7 +64,7 @@ the user's metadata, which the home header reads through `avatarUrlFor()`.
 
 ### 4. Email templates (required for the verification-code screens)
 
-The sign-up and password-reset screens ask for a **6-digit code**, not a magic
+The sign-up and password-reset screens ask for a **8-digit code**, not a magic
 link. Supabase's default templates only send a link, so update both under
 **Authentication → Email Templates** to include the token:
 
