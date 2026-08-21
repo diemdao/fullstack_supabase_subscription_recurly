@@ -134,6 +134,56 @@ export const updateSubscription = async (
   return rowToSubscription(data as SubscriptionRow);
 };
 
+/** Only the fields present on `patch` become columns. */
+const draftToPartialColumns = (patch: Partial<SubscriptionDraft>) => {
+  const columns: Record<string, unknown> = {};
+
+  if (patch.name !== undefined) columns.name = patch.name;
+  if (patch.price !== undefined) columns.price = patch.price;
+  if (patch.currency !== undefined) columns.currency = patch.currency;
+  if (patch.billing !== undefined) columns.billing = patch.billing;
+  if (patch.frequency !== undefined) columns.frequency = patch.frequency ?? null;
+  if (patch.plan !== undefined) columns.plan = patch.plan ?? null;
+  if (patch.category !== undefined) columns.category = patch.category ?? null;
+  if (patch.paymentMethod !== undefined) columns.payment_method = patch.paymentMethod ?? null;
+  if (patch.status !== undefined) columns.status = patch.status;
+  if (patch.startDate !== undefined) columns.start_date = patch.startDate ?? null;
+  if (patch.renewalDate !== undefined) columns.renewal_date = patch.renewalDate ?? null;
+  if (patch.iconKey !== undefined) columns.icon_key = patch.iconKey;
+  if (patch.color !== undefined) columns.color = patch.color ?? null;
+
+  return columns;
+};
+
+/**
+ * Updates only the supplied fields. `user_id` is never touched; RLS scopes the
+ * row to the caller.
+ *
+ * `updateSubscription` above writes every editable column, which is right for
+ * the modal because it always submits a complete form. The agent sends only
+ * what changed, so routing it through there would null out the rest.
+ */
+export const patchSubscription = async (
+  id: string,
+  patch: Partial<SubscriptionDraft>
+): Promise<Subscription> => {
+  const columns = draftToPartialColumns(patch);
+
+  if (Object.keys(columns).length === 0) {
+    throw new Error('Nothing to update.');
+  }
+
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .update(columns)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return rowToSubscription(data as SubscriptionRow);
+};
+
 export const updateSubscriptionStatus = async (
   id: string,
   status: 'active' | 'paused' | 'cancelled'

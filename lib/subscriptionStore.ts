@@ -1,7 +1,9 @@
+import type { Status } from '@/constants/subscriptions';
 import {
   createSubscription,
   deleteSubscription,
   fetchSubscriptions,
+  patchSubscription,
   updateSubscription,
   updateSubscriptionStatus,
 } from '@/lib/subscriptions';
@@ -21,6 +23,12 @@ interface SubscriptionStore {
   loadSubscriptions: (options?: { refresh?: boolean }) => Promise<void>;
   addSubscription: (draft: SubscriptionDraft) => Promise<Subscription | null>;
   editSubscription: (id: string, draft: SubscriptionDraft) => Promise<Subscription | null>;
+  /** Writes only the supplied fields. Used by the agent, which sends partials. */
+  patchSubscriptionById: (
+    id: string,
+    patch: Partial<SubscriptionDraft>
+  ) => Promise<Subscription | null>;
+  changeStatus: (id: string, status: Status) => Promise<void>;
   cancelSubscription: (id: string) => Promise<void>;
   removeSubscription: (id: string) => Promise<void>;
   setSubscriptions: (subscriptions: Subscription[]) => void;
@@ -83,18 +91,34 @@ export const useSubscriptionStore = create<SubscriptionStore>((set, get) => ({
     }
   },
 
-  cancelSubscription: async (id) => {
+  patchSubscriptionById: async (id, patch) => {
+    set({ error: null });
+    try {
+      const updated = await patchSubscription(id, patch);
+      set((state) => ({
+        subscriptions: state.subscriptions.map((subscription) =>
+          subscription.id === id ? updated : subscription
+        ),
+      }));
+      return updated;
+    } catch (error) {
+      set({ error: messageFor(error) });
+      return null;
+    }
+  },
+
+  changeStatus: async (id, status) => {
     const previous = get().subscriptions;
     // Optimistic: flip the badge immediately, roll back if the write fails.
     set({
       error: null,
       subscriptions: previous.map((subscription) =>
-        subscription.id === id ? { ...subscription, status: 'cancelled' } : subscription
+        subscription.id === id ? { ...subscription, status } : subscription
       ),
     });
 
     try {
-      const updated = await updateSubscriptionStatus(id, 'cancelled');
+      const updated = await updateSubscriptionStatus(id, status);
       set((state) => ({
         subscriptions: state.subscriptions.map((subscription) =>
           subscription.id === id ? updated : subscription
@@ -104,6 +128,9 @@ export const useSubscriptionStore = create<SubscriptionStore>((set, get) => ({
       set({ subscriptions: previous, error: messageFor(error) });
     }
   },
+
+  // One status-write path: the swipe action and the agent both land here.
+  cancelSubscription: (id) => get().changeStatus(id, 'cancelled'),
 
   removeSubscription: async (id) => {
     const previous = get().subscriptions;

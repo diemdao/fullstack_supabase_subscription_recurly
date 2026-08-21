@@ -675,4 +675,8 @@
     .insights-title {
         @apply text-3xl font-sans-bold text-primary;
     }
+
+    .tabs-primary {
+    @apply size-12 items-center justify-center rounded-full bg-accent;
+    }
 }

@@ -1,5 +1,17 @@
 import { icons, type IconKey } from '@/constants/icons';
 import { colors } from '@/constants/theme';
+import {
+  CATEGORIES,
+  CATEGORY_COLORS,
+  DEFAULT_CURRENCY,
+  ICON_CHOICES,
+  STATUS_OPTIONS,
+  SWATCHES,
+  type Category,
+  type Frequency,
+  type Status,
+} from '@/constants/subscriptions';
+import { addPeriod } from '@/lib/renewal';
 import DateTimePicker, {
   DateTimePickerAndroid,
   type DateTimePickerEvent,
@@ -33,76 +45,6 @@ interface CreateSubscriptionModalProps {
    */
   subscription?: Subscription | null;
 }
-
-type Frequency = 'Monthly' | 'Yearly';
-
-type Category =
-  | 'Entertainment'
-  | 'AI Tools'
-  | 'Developer Tools'
-  | 'Design'
-  | 'Productivity'
-  | 'Cloud'
-  | 'Music'
-  | 'Other';
-
-const CATEGORIES: Category[] = [
-  'Entertainment',
-  'AI Tools',
-  'Developer Tools',
-  'Design',
-  'Productivity',
-  'Cloud',
-  'Music',
-  'Other',
-];
-
-const CATEGORY_COLORS: Record<Category, string> = {
-  'Entertainment': '#ff6b6b',
-  'AI Tools': '#b8d4e3',
-  'Developer Tools': '#e8def8',
-  'Design': '#f5c542',
-  'Productivity': '#95e1d3',
-  'Cloud': '#a8d8ea',
-  'Music': '#e2b6cf',
-  'Other': '#d4d4d4',
-};
-
-/**
- * Status values are lowercase because the `subscriptions` table constrains the
- * column to exactly 'active' | 'paused' | 'cancelled'.
- */
-const STATUSES = [
-  { value: 'active', label: 'Active' },
-  { value: 'paused', label: 'Paused' },
-  { value: 'cancelled', label: 'Cancelled' },
-] as const;
-
-type Status = (typeof STATUSES)[number]['value'];
-
-/** Brand glyphs only — the rest of `icons` is app chrome (tabs, arrows). */
-const ICON_CHOICES: IconKey[] = [
-  'plus',
-  'spotify',
-  'notion',
-  'figma',
-  'github',
-  'adobe',
-  'claude',
-  'openai',
-  'canva',
-  'dropbox',
-  'medium',
-];
-
-const SWATCHES: string[] = [
-  ...new Set([...Object.values(CATEGORY_COLORS), '#b8e8d0', '#ffd6a5', '#c7ceea']),
-];
-
-const DEFAULT_CURRENCY = 'USD';
-
-const addPeriod = (from: dayjs.Dayjs, frequency: Frequency) =>
-  frequency === 'Monthly' ? from.add(1, 'month') : from.add(1, 'year');
 
 const CreateSubscriptionModal = ({
   visible,
@@ -176,7 +118,7 @@ const CreateSubscriptionModal = ({
         : 'Other'
     );
     setStatus(
-      STATUSES.some((option) => option.value === subscription.status)
+      STATUS_OPTIONS.some((option) => option.value === subscription.status)
         ? (subscription.status as Status)
         : 'active'
     );
@@ -408,7 +350,7 @@ const CreateSubscriptionModal = ({
               <View className="auth-field">
                 <Text className="auth-label">Status</Text>
                 <View className="picker-row">
-                  {STATUSES.map((option) => (
+                  {STATUS_OPTIONS.map((option) => (
                     <Pressable
                       key={option.value}
                       className={clsx('picker-option', status === option.value && 'picker-option-active')}
