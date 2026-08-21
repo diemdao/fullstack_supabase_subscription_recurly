@@ -98,6 +98,7 @@ const ICON_ALIASES: Record<string, IconKey> = {
   anthropic: 'claude',
   openai: 'openai',
   chatgpt: 'openai',
+  netflix: 'netflix',
   canva: 'canva',
   dropbox: 'dropbox',
   medium: 'medium',

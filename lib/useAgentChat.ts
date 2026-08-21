@@ -19,6 +19,16 @@ import { usePostHog } from 'posthog-react-native';
 import React from 'react';
 import { Alert } from 'react-native';
 
+/** What happened to a proposal once the user acted on it. */
+export type ProposalOutcome = 'done' | 'failed' | 'dismissed';
+
+/**
+ * Why a proposal was dismissed. A decline is final; a correction means the user
+ * is about to say what the model got wrong, and the next turn should wait for
+ * it rather than re-proposing the same thing.
+ */
+export type DismissIntent = 'declined' | 'correcting';
+
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
@@ -69,7 +79,7 @@ export const useAgentChat = () => {
   const [messages, setMessages] = React.useState<ChatMessage[]>([]);
   const [isThinking, setIsThinking] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [applied, setApplied] = React.useState<Record<string, 'done' | 'failed'>>({});
+  const [applied, setApplied] = React.useState<Record<string, ProposalOutcome>>({});
 
   /** Confirmations since the last turn, folded into the next outbound message. */
   const pendingNotes = React.useRef<string[]>([]);
@@ -197,10 +207,17 @@ export const useAgentChat = () => {
     [addSubscription, changeStatus, findExisting, patchSubscriptionById, posthog, removeSubscription]
   );
 
-  const dismiss = React.useCallback((proposal: Proposal) => {
-    setApplied((current) => ({ ...current, [proposal.proposalId]: 'failed' }));
-    pendingNotes.current.push('The user declined that change.');
-  }, []);
+  const dismiss = React.useCallback(
+    (proposal: Proposal, intent: DismissIntent = 'declined') => {
+      setApplied((current) => ({ ...current, [proposal.proposalId]: 'dismissed' }));
+      pendingNotes.current.push(
+        intent === 'correcting'
+          ? 'The user says that proposal got something wrong and is correcting it now. Do not repeat it — wait for what they say next.'
+          : 'The user declined that change.'
+      );
+    },
+    []
+  );
 
   const reset = React.useCallback(() => {
     history.current = [];

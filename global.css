@@ -679,4 +679,238 @@
     .tabs-primary {
     @apply size-12 items-center justify-center rounded-full bg-accent;
     }
+
+    /* ----------------------------------------------------------------------
+     * Assistant chat.
+     *
+     * The proposal card is the confirmation gate, so its job is to make a
+     * value the model worked out impossible to mistake for one the user gave.
+     * Told values are plain bold text; worked-out values sit in their own
+     * tinted block as accent chips, borrowing the idiom of `.category-chip-
+     * active` so they read as a choice rather than a fact.
+     * -------------------------------------------------------------------- */
+    .chat-title {
+        @apply mt-5 px-5 text-3xl font-sans-bold text-primary;
+    }
+
+    .chat-error {
+        @apply px-5 pb-1 text-xs font-sans-medium text-destructive;
+    }
+
+    /* Transcript ---------------------------------------------------------- */
+    .chat-msg-user {
+        @apply mb-4 max-w-[85%] self-end rounded-2xl rounded-br-md bg-accent px-4 py-3;
+    }
+
+    .chat-msg-user-text {
+        @apply text-[14px] font-sans-medium text-white;
+    }
+
+    .chat-msg-agent {
+        @apply mb-2 max-w-[92%] self-start rounded-2xl rounded-bl-md border border-border bg-card px-4 py-3;
+    }
+
+    .chat-msg-agent-text {
+        @apply text-[14px] font-sans-medium text-primary;
+    }
+
+    .chat-group {
+        @apply mb-4;
+    }
+
+    .chat-thinking {
+        @apply mb-4 flex-row items-center gap-[6px] self-start rounded-2xl rounded-bl-md border border-border bg-card px-4 py-4;
+    }
+
+    .chat-thinking-dot {
+        @apply size-[6px] rounded-full bg-muted-foreground;
+    }
+
+    /* Proposal card ------------------------------------------------------- */
+    .chat-card {
+        @apply mb-3 ml-3 rounded-2xl border border-border bg-card p-4;
+    }
+
+    .chat-card-head {
+        @apply flex-row items-center justify-between gap-3;
+    }
+
+    .chat-card-title {
+        @apply flex-1 text-lg font-sans-bold text-primary;
+    }
+
+    .chat-card-count {
+        @apply shrink-0 text-xs font-sans-semibold text-muted-foreground;
+    }
+
+    .chat-card-summary {
+        @apply mt-1 text-sm font-sans-semibold text-primary;
+    }
+
+    /* Told rows — the user's own words. */
+    .chat-rows {
+        @apply mt-3 gap-2;
+    }
+
+    .chat-row {
+        @apply flex-row items-center justify-between gap-3;
+    }
+
+    .chat-row-label {
+        @apply shrink-0 text-sm font-sans-medium text-muted-foreground;
+    }
+
+    .chat-row-value {
+        @apply flex-1 text-right text-sm font-sans-bold text-primary;
+    }
+
+    /* Worked-out block — everything the user did not say. */
+    .chat-worked {
+        @apply mt-4 gap-2 rounded-xl border-l-2 border-accent bg-muted p-3;
+    }
+
+    .chat-worked-head {
+        @apply text-xs font-sans-semibold text-primary;
+    }
+
+    .chat-worked-row {
+        @apply flex-row items-center justify-between gap-3;
+    }
+
+    .chat-worked-label {
+        @apply shrink-0 text-sm font-sans-medium text-muted-foreground;
+    }
+
+    .chat-worked-chip {
+        @apply flex-row items-center rounded-full border border-accent bg-accent/10 px-3 py-1;
+    }
+
+    .chat-worked-chip-text {
+        @apply text-xs font-sans-semibold text-accent;
+    }
+
+    .chat-worked-glyph {
+        @apply size-4;
+    }
+
+    /* Delete proposals name what disappears before the native alert appears. */
+    .chat-losing {
+        @apply mt-3 rounded-xl border-l-2 border-destructive bg-muted p-3;
+    }
+
+    .chat-losing-label {
+        @apply text-xs font-sans-semibold text-destructive;
+    }
+
+    .chat-losing-text {
+        @apply mt-1 text-sm font-sans-medium text-primary;
+    }
+
+    /* Actions ------------------------------------------------------------- */
+    .chat-actions {
+        @apply mt-4 flex-row gap-3;
+    }
+
+    .chat-confirm {
+        @apply flex-1 items-center justify-center rounded-full bg-primary py-3;
+    }
+
+    .chat-confirm-danger {
+        @apply bg-destructive;
+    }
+
+    .chat-confirm-text {
+        @apply text-sm font-sans-bold text-background;
+    }
+
+    .chat-secondary {
+        @apply flex-1 items-center justify-center rounded-full border border-border bg-background py-3;
+    }
+
+    .chat-secondary-text {
+        @apply text-sm font-sans-bold text-primary;
+    }
+
+    .chat-action-disabled {
+        @apply opacity-40;
+    }
+
+    /* Spent states — collapsed, and rendered as a View so they are untappable. */
+    .chat-card-spent {
+        @apply mb-3 ml-3 flex-row items-center gap-2 rounded-2xl bg-muted px-4 py-3;
+    }
+
+    .chat-spent-mark {
+        @apply text-sm font-sans-bold;
+    }
+
+    .chat-spent-text {
+        @apply flex-1 text-sm font-sans-semibold text-muted-foreground;
+    }
+
+    .chat-card-failed {
+        @apply mb-3 ml-3 rounded-2xl border border-destructive bg-card p-4;
+    }
+
+    .chat-failed-title {
+        @apply text-sm font-sans-bold text-destructive;
+    }
+
+    .chat-failed-reason {
+        @apply mt-1 text-xs font-sans-medium text-muted-foreground;
+    }
+
+    .chat-retry {
+        @apply mt-3 self-end rounded-full border border-border bg-background px-4 py-2;
+    }
+
+    .chat-retry-text {
+        @apply text-sm font-sans-bold text-primary;
+    }
+
+    /* Empty state --------------------------------------------------------- */
+    .chat-empty {
+        @apply flex-1 justify-center px-5;
+    }
+
+    .chat-empty-title {
+        @apply text-center text-2xl font-sans-bold text-primary;
+    }
+
+    .chat-empty-body {
+        @apply mt-3 text-center text-sm font-sans-medium text-muted-foreground;
+    }
+
+    .chat-examples {
+        @apply mt-8 gap-3;
+    }
+
+    .chat-example {
+        @apply rounded-2xl border border-border bg-card px-4 py-3;
+    }
+
+    .chat-example-text {
+        @apply text-sm font-sans-medium text-primary;
+    }
+
+    /* Input --------------------------------------------------------------- */
+    .chat-input-bar {
+        @apply flex-row items-end gap-2 px-5 pt-2;
+    }
+
+    /*
+     * text-[14px] rather than text-base for the same reason as `.auth-input`:
+     * a named size emits a line-height, which clips descenders in a TextInput.
+     */
+    .chat-input {
+        @apply max-h-[112px] flex-1 rounded-2xl border border-border bg-card px-4 py-3 text-[14px] font-sans-medium text-primary;
+    }
+
+    .chat-send {
+        @apply size-11 items-center justify-center rounded-full bg-accent;
+    }
+
+    .chat-send-disabled {
+        @apply bg-primary/20;
+    }
 }

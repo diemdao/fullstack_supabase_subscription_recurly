@@ -41,6 +41,7 @@ const ICON_KEYS = [
   'claude',
   'openai',
   'canva',
+  'netflix',
   'dropbox',
   'medium',
 ] as const;
@@ -51,7 +52,7 @@ const ICON_KEYS = [
 // tasks". gemini-3.7-flash exists and is newer, but appears only in the
 // Interactions-API docs; it is not listed as available on this endpoint. Test
 // it with a single curl before switching MODEL.
-const MODEL = 'gemini-3.5-flash';
+const MODEL = 'gemini-3.5-flash-lite';
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 const MAX_TURNS = 6;
 
@@ -323,7 +324,7 @@ Deno.serve(async (req) => {
         // ever emitted, which surfaces as an empty candidate.
         generationConfig: {
           maxOutputTokens: 4096,
-          thinkingConfig: { thinkingLevel: 'low' },
+          // thinkingConfig: { thinkingLevel: 'low' },
         },
       }),
     });
@@ -399,7 +400,7 @@ Deno.serve(async (req) => {
           // turn. The confirm card needs a key stable across the whole
           // response, so mint one from turn and index instead.
           proposals.push({
-            proposalId: `t${turn}-c${index}-${call.name}`,
+            proposalId: crypto.randomUUID(),
             action: call.name.replace('propose_', '').replace('_subscription', ''),
             input: args,
           });
