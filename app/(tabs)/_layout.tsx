@@ -9,12 +9,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 const tabBar = components.tabBar;
 
 // This gives you a "pill" background that only appears/highlights when that tab is the active one.
-const TabIcon = ({focused, icon}: TabIconProps) => {
+const TabIcon = ({focused, icon, variant}: TabIconProps) => {
     return (
         <View className="tabs-icon">
-            {/* Inner View gets tabs-pill, plus tabs-active conditionally when the tab is focused (via clsx) */}
-            <View className={clsx('tabs-pill', focused && 'tabs-active')}>
-                {/* Renders the actual icon image inside, scaled with resizeMode="contain" */}
+            <View className={clsx(
+                'tabs-pill',
+                variant === 'primary' ? 'tabs-primary' : focused && 'tabs-active'
+            )}>
                 <Image source={icon} resizeMode="contain" className="tabs-glyph"/>
             </View>
         </View>
