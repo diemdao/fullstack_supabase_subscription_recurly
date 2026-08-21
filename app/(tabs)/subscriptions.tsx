@@ -1,12 +1,15 @@
 import CreateSubscriptionModal from "@/components/CreateSubscriptionModal";
 import SubscriptionCard from "@/components/SubscriptionCard";
+import SubscriptionSectionHeader from "@/components/SubscriptionSectionHeader";
+import { colors } from "@/constants/theme";
 import { useAuth } from "@/lib/auth";
 import { useSubscriptionStore } from "@/lib/subscriptionStore";
+import { groupByStatus } from "@/lib/subscriptions";
 import { useSubscriptionActions } from "@/lib/useSubscriptionActions";
 import { styled } from "nativewind";
 import { usePostHog } from "posthog-react-native";
-import { useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Text, TextInput, View } from 'react-native';
+import { useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, SectionList, Text, TextInput, View } from 'react-native';
 import { SafeAreaView as RNSafeAreaView } from "react-native-safe-area-context";
 
 const SafeAreaView = styled(RNSafeAreaView);
@@ -37,11 +40,20 @@ const Subscriptions = () => {
         subscription.plan?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    // Search narrows first, then groups — so a query matching only cancelled
+    // rows produces a Cancelled section and nothing else.
+    const sections = useMemo(
+        () => groupByStatus(filteredSubscriptions),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [subscriptions, searchQuery]
+    );
+
     return (
         <SafeAreaView className="flex-1 bg-background">
-            <FlatList
-                data={filteredSubscriptions}
+            <SectionList
+                sections={sections}
                 keyExtractor={(item) => item.id}
+                stickySectionHeadersEnabled
                 ListHeaderComponent={
                     <View >
                         <Text className="text-3xl font-bold text-dark mt-5">My Subscriptions</Text>
@@ -66,26 +78,36 @@ const Subscriptions = () => {
 
                     </View>
                 }
-                renderItem={({ item }) => (
-                    <SubscriptionCard
-                        {...item}
-                        expanded={expandedId === item.id}
-                        onPress={() => {
-                            const isExpanding = expandedId !== item.id;
-                            setExpandedId(expandedId === item.id ? null : item.id);
-                            if (isExpanding) {
-                                posthog.capture('subscription_card_expanded', {
-                                    subscription_name: item.name,
-                                    subscription_category: item.category ?? null,
-                                    subscription_frequency: item.frequency ?? null,
-                                });
-                            }
-                        }}
-                        onEditPress={() => actions.startEdit(item)}
-                        onDeletePress={() => actions.confirmDelete(item)}
-                        isDeleting={actions.deletingId === item.id}
-                    />
-                )}
+                renderSectionHeader={({ section }) => <SubscriptionSectionHeader section={section} />}
+                renderItem={({ item, section }) => {
+                    const isActive = section.status === 'active';
+                    return (
+                        <View className={section.status === 'cancelled' ? 'sub-row-cancelled' : undefined}>
+                            <SubscriptionCard
+                                {...item}
+                                // Inactive rows drop the category colour, so a
+                                // glance separates them from the active block.
+                                color={isActive ? item.color : colors.muted}
+                                expanded={expandedId === item.id}
+                                onPress={() => {
+                                    const isExpanding = expandedId !== item.id;
+                                    setExpandedId(expandedId === item.id ? null : item.id);
+                                    if (isExpanding) {
+                                        posthog.capture('subscription_card_expanded', {
+                                            subscription_name: item.name,
+                                            subscription_category: item.category ?? null,
+                                            subscription_frequency: item.frequency ?? null,
+                                        });
+                                    }
+                                }}
+                                onEditPress={() => actions.startEdit(item)}
+                                onDeletePress={() => actions.confirmDelete(item)}
+                                isDeleting={actions.deletingId === item.id}
+                            />
+                        </View>
+                    );
+                }}
+                ItemSeparatorComponent={() => <View className="h-3" />}
                 extraData={`${expandedId}:${actions.deletingId}`}
                 refreshing={isRefreshing}
                 onRefresh={() => loadSubscriptions({ refresh: true })}
@@ -98,7 +120,7 @@ const Subscriptions = () => {
                         </Text>
                     )
                 }
-                contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120, gap: 12 }}
+                contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120 }}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
                 keyboardDismissMode="on-drag"

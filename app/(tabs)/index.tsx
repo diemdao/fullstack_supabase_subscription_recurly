@@ -1,6 +1,7 @@
 import CreateSubscriptionModal from "@/components/CreateSubscriptionModal";
 import ListHeading from "@/components/ListHeading";
 import SubscriptionCard from "@/components/SubscriptionCard";
+import SubscriptionSectionHeader from "@/components/SubscriptionSectionHeader";
 import UpcomingSubscriptionCard from "@/components/UpcomingSubscriptionCard";
 import { HOME_USER } from "@/constants/data";
 import { icons } from "@/constants/icons";
@@ -9,12 +10,13 @@ import "@/global.css";
 import { avatarUrlFor, displayNameFor, useAuth } from "@/lib/auth";
 import { useSubscriptionStore } from "@/lib/subscriptionStore";
 import { useSubscriptionActions } from "@/lib/useSubscriptionActions";
-import { monthlySpend, nextRenewalDate, upcomingRenewals } from "@/lib/subscriptions";
+import { colors } from "@/constants/theme";
+import { groupByStatus, monthlySpend, nextRenewalDate, upcomingRenewals } from "@/lib/subscriptions";
 import { formatCurrency } from "@/lib/utils";
 import dayjs from "dayjs";
 import { styled } from "nativewind";
 import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, FlatList, Image, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Image, Pressable, SectionList, Text, View } from "react-native";
 import { SafeAreaView as RNSafeAreaView } from "react-native-safe-area-context";
 
 
@@ -52,6 +54,7 @@ export default function App() {
   const balance = useMemo(() => monthlySpend(subscriptions), [subscriptions]);
   const nextRenewal = useMemo(() => nextRenewalDate(subscriptions), [subscriptions]);
   const upcoming = useMemo(() => upcomingRenewals(subscriptions), [subscriptions]);
+  const sections = useMemo(() => groupByStatus(subscriptions), [subscriptions]);
 
   const showInitialSpinner = isLoading && !hasLoaded;
 
@@ -59,7 +62,9 @@ export default function App() {
     <SafeAreaView className="flex-1 bg-background p-5">
 
         
-        <FlatList 
+        <SectionList
+          sections={sections}
+          stickySectionHeadersEnabled
           ListHeaderComponent={ () => <> 
           
               <View className="home-header"> 
@@ -104,18 +109,24 @@ export default function App() {
           
           </>}
 
-          data={subscriptions}
           keyExtractor={(item) => item.id}
 
-          renderItem={({ item }) => (
-            <SubscriptionCard
-              {...item}
-              expanded={expandedSubscriptionId === item.id}
-              onPress={() => setExpandedSubscriptionId((currentId) => (currentId) === item.id ? null : item.id)}
-              onEditPress={() => actions.startEdit(item)}
-              onDeletePress={() => actions.confirmDelete(item)}
-              isDeleting={actions.deletingId === item.id}
-            />
+          renderSectionHeader={({ section }) => <SubscriptionSectionHeader section={section} />}
+
+          renderItem={({ item, section }) => (
+            <View className={section.status === 'cancelled' ? 'sub-row-cancelled' : undefined}>
+              <SubscriptionCard
+                {...item}
+                // Inactive rows drop the category colour, so a glance separates
+                // them from the active block.
+                color={section.status === 'active' ? item.color : colors.muted}
+                expanded={expandedSubscriptionId === item.id}
+                onPress={() => setExpandedSubscriptionId((currentId) => (currentId) === item.id ? null : item.id)}
+                onEditPress={() => actions.startEdit(item)}
+                onDeletePress={() => actions.confirmDelete(item)}
+                isDeleting={actions.deletingId === item.id}
+              />
+            </View>
           )}
           extraData={`${expandedSubscriptionId}:${actions.deletingId}`}
           ItemSeparatorComponent={() => <View className="h-4"/>}

@@ -5,7 +5,7 @@ import { Image, Text, View } from 'react-native'
 const UpcomingSubscriptionCard = ({name, price, daysLeft, icon, currency}: 
     UpcomingSubscription) => {
   return (
-    <View className="upcoming-card ">
+    <View className="upcoming-card">
       <View className="upcoming-row">
         <Image source={icon} className="upcoming-icon"/>
         <View>

@@ -127,7 +127,7 @@
     }
 
     .upcoming-card {
-        @apply mr-2 w-44 rounded-2xl border border-black/10 bg-background p-2;
+        @apply mr-2 w-46 rounded-2xl border border-black/10 bg-background p-2;
     }
 
     .upcoming-row {
@@ -148,6 +148,10 @@
 
     .upcoming-name {
         @apply mt-2 text-lg font-sans-bold text-primary;
+    }
+
+    .upcoming-days {
+        @apply text-[13px] text-muted-foreground;
     }
 
     .sub-card {
@@ -912,5 +916,37 @@
 
     .chat-send-disabled {
         @apply bg-primary/20;
+    }
+
+    /* ----------------------------------------------------------------------
+     * Subscription list sections.
+     *
+     * Headers are sticky, so they need an opaque background — they cover rows
+     * sliding underneath. They span the same width as the rows, so no bleed
+     * past the list's horizontal padding is needed.
+     * -------------------------------------------------------------------- */
+    .sub-section-head {
+        @apply flex-row items-center gap-3 bg-background pb-3 pt-5;
+    }
+
+    .sub-section-title {
+        @apply text-2xl font-sans-bold text-primary;
+    }
+
+    .sub-section-count {
+        @apply rounded-full bg-muted px-3 py-1;
+    }
+
+    .sub-section-count-text {
+        @apply text-sm font-sans-semibold text-muted-foreground;
+    }
+
+    /*
+     * Cancelled rows keep their content readable but drop out of the visual
+     * foreground. Paused rows are separated from active ones by losing the
+     * category colour, which is enough on its own.
+     */
+    .sub-row-cancelled {
+        @apply opacity-60;
     }
 }

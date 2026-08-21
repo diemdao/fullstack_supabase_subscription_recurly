@@ -5,8 +5,9 @@
 // crosses the network boundary goes through the mappers below so screens keep
 // working with the same `Subscription` shape they always have.
 import { icons, type IconKey } from '@/constants/icons';
+import { STATUSES, STATUS_OPTIONS, type Status } from '@/constants/subscriptions';
 import { supabase } from '@/lib/supabase';
-import dayjs from 'dayjs';
+import dayjs, { type Dayjs } from 'dayjs';
 
 export interface SubscriptionRow {
   id: string;
@@ -266,9 +267,10 @@ export interface ChartBucket {
   key: string;
   /** Axis label, e.g. "Thu" or "8–14". */
   label: string;
-  /** Combined price of everything renewing in the bucket. */
+  /** Combined price of every billing occurrence in the bucket. */
   total: number;
-  /** How many subscriptions renew in the bucket. */
+  /** How many charges fall in the bucket. One subscription can contribute more
+   *  than one, if it bills twice inside the same block. */
   count: number;
   /** The bucket containing today — highlighted on the axis. */
   isCurrent: boolean;
@@ -277,14 +279,84 @@ export interface ChartBucket {
 const isBillable = (subscription: Subscription): boolean =>
   subscription.status !== 'cancelled' && Boolean(subscription.renewalDate);
 
-/**
- * Buckets renewals into one entry per day across the current Monday–Sunday
- * week. Days with nothing due are kept so the chart holds a stable seven-column
- * shape rather than collapsing.
- */
-export const renewalsByWeekday = (subscriptions: Subscription[]): ChartBucket[] => {
-  const today = dayjs().startOf('day');
+// ---------------------------------------------------------------------------
+// Billing occurrences
+//
+// Both insight sections are built from derived billing dates rather than the
+// stored `renewal_date`. That column holds one date — the NEXT renewal — so
+// reading it directly can only ever produce one future bar per subscription,
+// and a subscription's FIRST charge is never among them. Something starting
+// 22 Aug with a renewal of 22 Sep was invisible all August.
+//
+// Deriving instead means the two sections differ only in where their window
+// starts: "Total" covers the whole period, "Upcoming" clips the start to
+// today. Upcoming is Total minus the past, and they cannot disagree.
+// ---------------------------------------------------------------------------
 
+/** Ceiling on the step loop, so a garbage start date cannot spin. */
+const MAX_OCCURRENCE_STEPS = 500;
+
+/**
+ * Every billing date for `subscription` that falls inside the window, inclusive
+ * at both ends. Empty when the start date is missing, unparseable, or later
+ * than the window.
+ *
+ * Each candidate is measured from the anchor rather than by stepping the
+ * previous one forward, because dayjs clamps short months. Stepping would turn
+ * a 31 Jan start into 28 Feb and then hold every later month on the 28th — the
+ * same drift `nextRenewalFrom` in `lib/renewal.ts` exists to avoid.
+ */
+export const billingOccurrences = (
+  subscription: Subscription,
+  windowStart: Dayjs,
+  windowEnd: Dayjs
+): Dayjs[] => {
+  if (!subscription.startDate) return [];
+
+  const anchor = dayjs(subscription.startDate).startOf('day');
+  if (!anchor.isValid()) return [];
+  // It had not started yet at any point in the window.
+  if (anchor.isAfter(windowEnd, 'day')) return [];
+
+  const unit = isBilledYearly(subscription) ? 'year' : 'month';
+
+  // Jump most of the way rather than counting up from a start date that could
+  // be years back. One period of slack absorbs the clamping above.
+  const firstStep = Math.max(0, windowStart.diff(anchor, unit) - 1);
+
+  const occurrences: Dayjs[] = [];
+
+  for (let step = 0; step <= MAX_OCCURRENCE_STEPS; step += 1) {
+    const occurrence = anchor.add(firstStep + step, unit);
+    if (occurrence.isAfter(windowEnd, 'day')) break;
+    if (!occurrence.isBefore(windowStart, 'day')) occurrences.push(occurrence);
+  }
+
+  return occurrences;
+};
+
+// ---------------------------------------------------------------------------
+// Bucketing
+//
+// One plan per axis (week, month) and one fill routine, so the four exported
+// chart functions are four one-line combinations rather than four near-copies
+// that can drift apart.
+// ---------------------------------------------------------------------------
+
+interface BucketPlan {
+  buckets: ChartBucket[];
+  /** The full period the buckets span, ignoring any clipping. */
+  start: Dayjs;
+  end: Dayjs;
+  /** The bucket an occurrence belongs in, or undefined if it falls outside. */
+  locate: (occurrence: Dayjs) => ChartBucket | undefined;
+}
+
+/**
+ * One bucket per day across the current Monday–Sunday week. Empty days are kept
+ * so the chart holds a stable seven-column shape rather than collapsing.
+ */
+const weekPlan = (today: Dayjs): BucketPlan => {
   // dayjs weeks start on Sunday (day() === 0), so step back to Monday without
   // pulling in the isoWeek plugin.
   const monday = today.subtract((today.day() + 6) % 7, 'day');
@@ -304,29 +376,20 @@ export const renewalsByWeekday = (subscriptions: Subscription[]): ChartBucket[] 
 
   const byKey = new Map(buckets.map((bucket) => [bucket.key, bucket]));
 
-  for (const subscription of subscriptions) {
-    if (!isBillable(subscription)) continue;
-
-    const renewal = dayjs(subscription.renewalDate);
-    if (!renewal.isValid()) continue;
-
-    const bucket = byKey.get(renewal.format('YYYY-MM-DD'));
-    if (!bucket) continue;
-
-    bucket.total += subscription.price;
-    bucket.count += 1;
-  }
-
-  return buckets;
+  return {
+    buckets,
+    start: monday,
+    end: monday.add(6, 'day'),
+    locate: (occurrence) => byKey.get(occurrence.format('YYYY-MM-DD')),
+  };
 };
 
 /**
- * Buckets the current month into seven-day blocks starting on the 1st, giving
- * four or five bars depending on the month's length. Bucketing by individual
- * day would mean up to 31 bars, which is unreadable at phone width.
+ * The current month in seven-day blocks starting on the 1st, giving four or
+ * five bars depending on the month's length. Bucketing by individual day would
+ * mean up to 31 bars, which is unreadable at phone width.
  */
-export const renewalsByMonthBlock = (subscriptions: Subscription[]): ChartBucket[] => {
-  const today = dayjs().startOf('day');
+const monthPlan = (today: Dayjs): BucketPlan => {
   const monthKey = today.format('YYYY-MM');
   const daysInMonth = today.daysInMonth();
   const todayDate = today.date();
@@ -343,18 +406,108 @@ export const renewalsByMonthBlock = (subscriptions: Subscription[]): ChartBucket
     });
   }
 
+  return {
+    buckets,
+    start: today.startOf('month'),
+    end: today.endOf('month').startOf('day'),
+    locate: (occurrence) =>
+      occurrence.format('YYYY-MM') === monthKey
+        ? buckets[Math.floor((occurrence.date() - 1) / 7)]
+        : undefined,
+  };
+};
+
+/**
+ * Sums each subscription's occurrences into the plan's buckets. `from` is where
+ * the window is clipped: the plan's own start for a total, today for upcoming.
+ */
+const fillBuckets = (
+  subscriptions: Subscription[],
+  plan: BucketPlan,
+  from: Dayjs
+): ChartBucket[] => {
   for (const subscription of subscriptions) {
     if (!isBillable(subscription)) continue;
 
-    const renewal = dayjs(subscription.renewalDate);
-    if (!renewal.isValid() || renewal.format('YYYY-MM') !== monthKey) continue;
+    for (const occurrence of billingOccurrences(subscription, from, plan.end)) {
+      const bucket = plan.locate(occurrence);
+      if (!bucket) continue;
 
-    const bucket = buckets[Math.floor((renewal.date() - 1) / 7)];
-    if (!bucket) continue;
-
-    bucket.total += subscription.price;
-    bucket.count += 1;
+      bucket.total += subscription.price;
+      bucket.count += 1;
+    }
   }
 
-  return buckets;
+  return plan.buckets;
 };
+
+const later = (a: Dayjs, b: Dayjs): Dayjs => (a.isAfter(b) ? a : b);
+
+// ---------------------------------------------------------------------------
+// Chart data
+//
+// "Total" spans the whole period; "Upcoming" is the same thing clipped to
+// today. Every difference between the two sections lives in that one argument.
+// ---------------------------------------------------------------------------
+
+/** Everything charged across the current week, past days included. */
+export const totalsByWeekday = (subscriptions: Subscription[]): ChartBucket[] => {
+  const plan = weekPlan(dayjs().startOf('day'));
+  return fillBuckets(subscriptions, plan, plan.start);
+};
+
+/** Everything charged across the current month, past days included. */
+export const totalsByMonthBlock = (subscriptions: Subscription[]): ChartBucket[] => {
+  const plan = monthPlan(dayjs().startOf('day'));
+  return fillBuckets(subscriptions, plan, plan.start);
+};
+
+/** What is still to be charged this week. A charge dated today still counts. */
+export const renewalsByWeekday = (subscriptions: Subscription[]): ChartBucket[] => {
+  const today = dayjs().startOf('day');
+  const plan = weekPlan(today);
+  return fillBuckets(subscriptions, plan, later(plan.start, today));
+};
+
+/** What is still to be charged this month. A charge dated today still counts. */
+export const renewalsByMonthBlock = (subscriptions: Subscription[]): ChartBucket[] => {
+  const today = dayjs().startOf('day');
+  const plan = monthPlan(today);
+  return fillBuckets(subscriptions, plan, later(plan.start, today));
+};
+
+
+// ---------------------------------------------------------------------------
+// Grouping
+// ---------------------------------------------------------------------------
+
+/** One SectionList section. `status` lets a row style itself without re-deriving. */
+export interface SubscriptionSection {
+  title: string;
+  status: Status;
+  data: Subscription[];
+}
+
+/**
+ * The column is constrained to the three known values, but a row carrying
+ * anything else would otherwise fall through every section and vanish from the
+ * list entirely. Treat the unknown as active, same as the create form does.
+ */
+const asStatus = (value?: string): Status =>
+  STATUSES.includes(value as Status) ? (value as Status) : 'active';
+
+/** True for rows that should render at full strength in the lists. */
+export const isActiveStatus = (value?: string): boolean => asStatus(value) === 'active';
+
+/**
+ * Active, Paused, Cancelled — in that order, taking both the order and the
+ * labels from `STATUS_OPTIONS` so they cannot drift from the create form.
+ * Sections with nothing in them are dropped rather than rendering a bare
+ * header, so a search matching only cancelled rows shows only that section.
+ */
+export const groupByStatus = (subscriptions: Subscription[]): SubscriptionSection[] =>
+  STATUS_OPTIONS.map(({ value, label }) => ({
+    title: label,
+    status: value,
+    data: subscriptions.filter((subscription) => asStatus(subscription.status) === value),
+  })).filter((section) => section.data.length > 0);
