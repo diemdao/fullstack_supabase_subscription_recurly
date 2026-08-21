@@ -71,7 +71,7 @@ const TabLayout = () => {
                             options={{
                                     title: tab.title,
                                     tabBarIcon: ({focused}) => (
-                                        <TabIcon focused={focused} icon={tab.icon} />
+                                        <TabIcon focused={focused} icon={tab.icon} variant={tab.variant} />
                                     )
                             }}/>
                     ))}

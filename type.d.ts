@@ -1,11 +1,12 @@
-import type { IconKey } from "./constants/icons";
 import type { ImageSourcePropType } from "react-native";
+import type { IconKey } from "./constants/icons";
 
 declare global {
     interface AppTab {
         name: string;
         title: string;
         icon: ImageSourcePropType;
+        variant?: 'primary';
     }
 
     interface TabIconProps {
